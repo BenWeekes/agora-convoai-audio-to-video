@@ -12,7 +12,6 @@ The integration follows a three-phase workflow:
 
 ## Architecture Flow
 
-![Agora ConvoAI Integration Sequence Diagram](sequence-diagram.svg)
 <img src="sequence-diagram.svg" alt="Agora ConvoAI Integration Sequence Diagram" width="100%">
 ## Implementation Components
 
