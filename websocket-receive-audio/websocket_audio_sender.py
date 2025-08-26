@@ -37,6 +37,7 @@ class WebSocketAudioSender:
         }
         
         payload = {
+            "command": "init",  # Added missing command field as per documentation
             "avatar_id": AVATAR_ID,
             "quality": "high",
             "version": "v1",
@@ -60,7 +61,7 @@ class WebSocketAudioSender:
             
             # Send initial configuration payload
             await self.websocket.send(json.dumps(payload))
-            logger.info("Sent initial configuration payload")
+            logger.info("Sent initial configuration payload with 'init' command")
             
             # Start listening for messages in background
             asyncio.create_task(self.listen_for_messages())
