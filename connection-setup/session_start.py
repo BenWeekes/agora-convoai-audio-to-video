@@ -3,8 +3,8 @@ import json
 import logging
 
 # Configuration
-API_ENDPOINT = "https://api.example.com/v1/sessions"  # Update with actual endpoint
-# API_ENDPOINT = "http://localhost:8080/v1/sessions"  # For local testing
+API_ENDPOINT = "https://api.example.com/session/start"  # Update with actual endpoint
+# API_ENDPOINT = "http://localhost:8080/session/start"  # For local testing
 API_KEY = "YOUR_API_KEY"
 
 # Setup logging
@@ -12,12 +12,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def test_connection_setup_endpoint():
-    """Test the connection setup POST endpoint"""
+def test_session_start_endpoint():
+    """Test the session start POST endpoint"""
     
-    # Prepare test payload
+    # Prepare test payload (API key moved to headers)
     payload = {
-        "api_key": API_KEY,
         "avatar_id": "16cb73e7de08",
         "quality": "high",
         "version": "v1",
@@ -31,12 +30,15 @@ def test_connection_setup_endpoint():
         }
     }
     
+    # API key now in headers for better security
     headers = {
         "accept": "application/json",
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "x-api-key": API_KEY
     }
     
     logger.info(f"Testing endpoint: {API_ENDPOINT}")
+    logger.info(f"Headers (API key masked): {dict(headers, **{'x-api-key': '***masked***'})}")
     logger.info(f"Payload: {json.dumps(payload, indent=2)}")
     
     try:
@@ -154,7 +156,6 @@ def test_invalid_api_key():
     logger.info("Testing with invalid API key...")
     
     payload = {
-        "api_key": "INVALID_API_KEY",
         "avatar_id": "test_avatar",
         "quality": "high",
         "version": "v1",
@@ -168,9 +169,11 @@ def test_invalid_api_key():
         }
     }
     
+    # Invalid API key in headers
     headers = {
         "accept": "application/json",
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "x-api-key": "INVALID_API_KEY"
     }
     
     try:
@@ -189,10 +192,93 @@ def test_invalid_api_key():
         return False
 
 
+def test_missing_api_key():
+    """Test the endpoint with missing API key header"""
+    logger.info("\n" + "="*50)
+    logger.info("Testing with missing API key header...")
+    
+    payload = {
+        "avatar_id": "test_avatar",
+        "quality": "high",
+        "version": "v1",
+        "video_encoding": "H264",
+        "agora_settings": {
+            "app_id": "test_app_id",
+            "token": "test_token",
+            "channel": "test_channel",
+            "uid": "123",
+            "enable_string_uid": False
+        }
+    }
+    
+    # Headers without API key
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json"
+        # Missing x-api-key header
+    }
+    
+    try:
+        response = requests.post(API_ENDPOINT, headers=headers, json=payload, timeout=30)
+        logger.info(f"Response status code: {response.status_code}")
+        
+        if response.status_code in [401, 403]:
+            logger.info(f"✅ Correctly received {response.status_code} for missing API key")
+            return True
+        else:
+            logger.warning(f"⚠️ Expected 401 or 403 but got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error during missing API key test: {e}")
+        return False
+
+
+def test_malformed_payload():
+    """Test the endpoint with malformed payload"""
+    logger.info("\n" + "="*50)
+    logger.info("Testing with malformed payload (missing required field)...")
+    
+    # Missing avatar_id field
+    payload = {
+        "quality": "high",
+        "version": "v1",
+        "video_encoding": "H264",
+        "agora_settings": {
+            "app_id": "test_app_id",
+            "token": "test_token",
+            "channel": "test_channel",
+            "uid": "123",
+            "enable_string_uid": False
+        }
+    }
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "x-api-key": API_KEY
+    }
+    
+    try:
+        response = requests.post(API_ENDPOINT, headers=headers, json=payload, timeout=30)
+        logger.info(f"Response status code: {response.status_code}")
+        
+        if response.status_code == 400:
+            logger.info("✅ Correctly received 400 Bad Request for malformed payload")
+            return True
+        else:
+            logger.warning(f"⚠️ Expected 400 but got {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error during malformed payload test: {e}")
+        return False
+
+
 def main():
     """Run all tests"""
     logger.info("=" * 60)
-    logger.info("CONNECTION SETUP ENDPOINT TEST")
+    logger.info("SESSION START ENDPOINT TEST")
     logger.info("=" * 60)
     
     # Test 1: Valid request
@@ -200,7 +286,7 @@ def main():
     logger.info("Test 1: Valid API request")
     logger.info("="*50)
     
-    success1 = test_connection_setup_endpoint()
+    success1 = test_session_start_endpoint()
     
     # Test 2: Invalid API key
     logger.info("\n" + "="*50)
@@ -209,6 +295,20 @@ def main():
     
     success2 = test_invalid_api_key()
     
+    # Test 3: Missing API key
+    logger.info("\n" + "="*50)
+    logger.info("Test 3: Missing API key header")
+    logger.info("="*50)
+    
+    success3 = test_missing_api_key()
+    
+    # Test 4: Malformed payload
+    logger.info("\n" + "="*50)
+    logger.info("Test 4: Malformed payload")
+    logger.info("="*50)
+    
+    success4 = test_malformed_payload()
+    
     # Summary
     logger.info("\n" + "="*50)
     logger.info("TEST SUMMARY")
@@ -216,8 +316,13 @@ def main():
     
     logger.info(f"Valid request test: {'✅ PASSED' if success1 else '❌ FAILED'}")
     logger.info(f"Invalid API key test: {'✅ PASSED' if success2 else '❌ FAILED'}")
+    logger.info(f"Missing API key test: {'✅ PASSED' if success3 else '❌ FAILED'}")
+    logger.info(f"Malformed payload test: {'✅ PASSED' if success4 else '❌ FAILED'}")
     
-    if success1 and success2:
+    total_passed = sum([success1, success2, success3, success4])
+    logger.info(f"\nOverall: {total_passed}/4 tests passed")
+    
+    if total_passed == 4:
         logger.info("🎉 All tests passed!")
     else:
         logger.info("⚠️ Some tests failed. Check the logs above for details.")
