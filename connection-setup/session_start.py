@@ -2,9 +2,8 @@ import requests
 import json
 import logging
 
-# Configuration
-API_ENDPOINT = "https://api.example.com/session/start"  # Update with actual endpoint
-# API_ENDPOINT = "http://localhost:8080/session/start"  # For local testing
+# Configuration for local testing
+API_ENDPOINT = "http://localhost:8764/session/start"  # Points to mock server
 API_KEY = "YOUR_API_KEY"
 
 # Setup logging
@@ -71,7 +70,7 @@ def test_session_start_endpoint():
             
     except requests.exceptions.ConnectionError as e:
         logger.error(f"❌ Connection error: {e}")
-        logger.error("Make sure the API endpoint is running and accessible")
+        logger.error("Make sure the mock server (session_test_receiver.py) is running on port 8764")
         return False
     except requests.exceptions.Timeout as e:
         logger.error(f"❌ Request timeout: {e}")
@@ -103,12 +102,14 @@ def verify_success_response(data):
     
     # Verify websocket_address format
     websocket_address = data["websocket_address"]
-    if not (websocket_address.startswith("ws://") or websocket_address.startswith("wss://")):
-        logger.error(f"❌ Invalid websocket_address format: {websocket_address}")
-        logger.error("Expected to start with 'ws://' or 'wss://'")
+    expected_websocket = "ws://localhost:8765"
+    
+    if websocket_address != expected_websocket:
+        logger.error(f"❌ Unexpected websocket_address: {websocket_address}")
+        logger.error(f"Expected: {expected_websocket}")
         return False
     else:
-        logger.info(f"✅ Valid websocket_address format: {websocket_address}")
+        logger.info(f"✅ Correct websocket_address: {websocket_address}")
     
     # Verify session_token is not empty
     session_token = data["session_token"]
@@ -278,7 +279,9 @@ def test_malformed_payload():
 def main():
     """Run all tests"""
     logger.info("=" * 60)
-    logger.info("SESSION START ENDPOINT TEST")
+    logger.info("SESSION START ENDPOINT TEST (LOCAL)")
+    logger.info("=" * 60)
+    logger.info("NOTE: Make sure session_test_receiver.py is running on port 8764")
     logger.info("=" * 60)
     
     # Test 1: Valid request
