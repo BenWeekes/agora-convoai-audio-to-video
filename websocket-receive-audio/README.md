@@ -68,8 +68,7 @@ The first message sent after establishing the WebSocket connection must be an in
 | token | string | Yes | Agora authentication token for secure channel access. |
 | channel | string | Yes | Name of the Agora channel to join. |
 | uid | string | Yes | User ID within the Agora channel. |
-| enable_string_uid | boolean | Yes | Determines whether the uid field should be treated as a string or numeric value. The Golang SDK for publishing back into Agora  should be configued with serviceCfg.UseStringUid = enable_string_uid|
-
+| enable_string_uid | boolean | Yes | Determines whether the uid field should be treated as a string or numeric value. The Golang SDK for publishing back into Agora should be configured with serviceCfg.UseStringUid = enable_string_uid |
 
 ### 2. Voice Command
 
@@ -97,6 +96,46 @@ After successful initialization, audio data can be streamed using voice commands
 | encoding | string | Yes | Audio encoding format. Supported values: `"PCM16"` (16-bit PCM), `"PCM8"` (8-bit PCM), `"OPUS"` |
 | event_id | string | Yes | Unique identifier for this audio chunk. Should be a UUID or similar unique string for tracking purposes. |
 
+### 3. Voice End Command
+
+Signals the end of current speech segment. 
+
+#### Request Format
+
+```json
+{
+  "command": "voice_end",
+  "event_id": "550e8400-e29b-41d4-a716-446655440001"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| command | string | Yes | Must be set to `"voice_end"` for end-of-speech messages |
+| event_id | string | Yes | Unique identifier for this voice_end event. Should be a UUID or similar unique string for tracking purposes. |
+
+
+### 4. Voice Interrupt Command
+
+Immediately interrupts any ongoing avatar speech. 
+
+#### Request Format
+
+```json
+{
+  "command": "voice_interrupt",
+  "event_id": "550e8400-e29b-41d4-a716-446655440002"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| command | string | Yes | Must be set to `"voice_interrupt"` for interrupt messages |
+| event_id | string | Yes | Unique identifier for this interrupt event. Should be a UUID or similar unique string for tracking purposes. |
 
 ## Testing
 
