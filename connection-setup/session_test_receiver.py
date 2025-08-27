@@ -7,14 +7,16 @@ Listens on port 8764 and provides mock responses for testing.
 import json
 import logging
 import time
+import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 import uuid
+import socket
 
 # Configuration
 SERVER_PORT = 8764
-WEBSOCKET_ADDRESS = "ws://localhost:8765"
-VALID_API_KEY = "YOUR_API_KEY"
+WEBSOCKET_PORT = 8765
+VALID_API_KEY = os.environ.get("TEST_API_KEY", "test-api-key-123")  # Can be set via environment variable
 
 # In-memory storage for active sessions
 active_sessions = {}
@@ -22,6 +24,18 @@ active_sessions = {}
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def get_server_hostname():
+    """Get the server's hostname or IP address"""
+    try:
+        # Try to get the actual hostname
+        hostname = socket.gethostname()
+        # Get the IP address associated with the hostname
+        local_ip = socket.gethostbyname(hostname)
+        return hostname if hostname != 'localhost' else local_ip
+    except:
+        return "localhost"
 
 
 class SessionHandler(BaseHTTPRequestHandler):
@@ -66,6 +80,8 @@ class SessionHandler(BaseHTTPRequestHandler):
             return False
         
         if api_key != VALID_API_KEY:
+            logger.warning(f"Invalid API key provided: {api_key}")
+            logger.info(f"Expected API key: {VALID_API_KEY}")
             self._send_json_response(401, {
                 "error": "Unauthorized",
                 "message": "Invalid API key",
@@ -202,22 +218,31 @@ class SessionHandler(BaseHTTPRequestHandler):
             })
             return
         
-        # Generate session token and store session
+        # Generate session ID and token
+        session_id = str(uuid.uuid4())
         session_token = self._generate_session_token()
+        
+        # Store session
         session_data = {
             "created_at": time.time(),
             "avatar_id": request_data["avatar_id"],
             "quality": request_data["quality"],
-            "status": "active"
+            "status": "active",
+            "session_id": session_id
         }
-        active_sessions[session_token] = session_data
+        active_sessions[session_id] = session_data
         
-        logger.info(f"Created new session with token: {session_token[:20]}...")
+        logger.info(f"Created new session with ID: {session_id}")
         logger.info(f"Active sessions count: {len(active_sessions)}")
+        
+        # Get server hostname for WebSocket address
+        hostname = get_server_hostname()
+        websocket_address = f"ws://oai.agora.io:{WEBSOCKET_PORT}"
         
         # Return success response
         response_data = {
-            "websocket_address": WEBSOCKET_ADDRESS,
+            "session_id": session_id,
+            "websocket_address": websocket_address,
             "session_token": session_token
         }
         
@@ -245,17 +270,17 @@ class SessionHandler(BaseHTTPRequestHandler):
         logger.info(f"Request data: {json.dumps(request_data, indent=2)}")
         
         # Validate required fields
-        session_token = request_data.get("session_token")
-        if not session_token:
+        session_id = request_data.get("session_id")
+        if not session_id:
             self._send_json_response(400, {
                 "error": "Invalid request",
-                "message": "Missing required field: session_token",
+                "message": "Missing required field: session_id",
                 "code": "VALIDATION_ERROR"
             })
             return
         
         # Check if session exists
-        if session_token not in active_sessions:
+        if session_id not in active_sessions:
             self._send_json_response(404, {
                 "error": "Not found",
                 "message": "Session not found or already terminated",
@@ -264,8 +289,8 @@ class SessionHandler(BaseHTTPRequestHandler):
             return
         
         # Remove session from active sessions
-        del active_sessions[session_token]
-        logger.info(f"Terminated session with token: {session_token[:20]}...")
+        del active_sessions[session_id]
+        logger.info(f"Terminated session with ID: {session_id}")
         logger.info(f"Active sessions count: {len(active_sessions)}")
         
         # Return success response
@@ -280,30 +305,35 @@ class SessionHandler(BaseHTTPRequestHandler):
 
 def main():
     """Start the mock server"""
+    hostname = get_server_hostname()
+    
     logger.info("=" * 60)
     logger.info("SESSION TEST RECEIVER SERVER")
     logger.info("=" * 60)
     logger.info(f"Starting mock server on port {SERVER_PORT}")
-    logger.info(f"WebSocket address will be: {WEBSOCKET_ADDRESS}")
+    logger.info(f"Server hostname: {hostname}")
+    logger.info(f"WebSocket address will be: ws://{hostname}:{WEBSOCKET_PORT}")
     logger.info(f"Valid API key: {VALID_API_KEY}")
     logger.info("")
     logger.info("Available endpoints:")
+    logger.info(f"  POST   http://{hostname}:{SERVER_PORT}/session/start")
     logger.info(f"  POST   http://localhost:{SERVER_PORT}/session/start")
+    logger.info(f"  DELETE http://{hostname}:{SERVER_PORT}/session/stop")
     logger.info(f"  DELETE http://localhost:{SERVER_PORT}/session/stop")
     logger.info("")
-    logger.info("To test with your scripts, update the API_ENDPOINT to:")
-    logger.info(f"  API_ENDPOINT = \"http://localhost:{SERVER_PORT}/session/start\"")
-    logger.info(f"  API_ENDPOINT = \"http://localhost:{SERVER_PORT}/session/stop\"")
+    logger.info("To set a custom API key, use environment variable:")
+    logger.info("  export TEST_API_KEY='your-custom-key'")
     logger.info("")
     logger.info("Press Ctrl+C to stop the server")
     logger.info("=" * 60)
     
     # Create and start server
     try:
-        server_address = ('localhost', SERVER_PORT)
+        # Bind to all interfaces (0.0.0.0) so it can be accessed via any hostname
+        server_address = ('0.0.0.0', SERVER_PORT)
         httpd = HTTPServer(server_address, SessionHandler)
         
-        logger.info(f"✅ Server started successfully on http://localhost:{SERVER_PORT}")
+        logger.info(f"✅ Server started successfully on http://0.0.0.0:{SERVER_PORT}")
         logger.info("Waiting for requests...")
         
         httpd.serve_forever()

@@ -4,6 +4,7 @@ import json
 import logging
 import wave
 import io
+import socket
 from datetime import datetime
 import websockets
 
@@ -14,6 +15,18 @@ OUTPUT_WAV_FILE = "received_audio.wav"
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def get_server_hostname():
+    """Get the server's hostname or IP address"""
+    try:
+        # Try to get the actual hostname
+        hostname = socket.gethostname()
+        # Get the IP address associated with the hostname
+        local_ip = socket.gethostbyname(hostname)
+        return hostname if hostname != 'localhost' else local_ip
+    except:
+        return "localhost"
 
 
 class WebSocketTestReceiver:
@@ -96,6 +109,25 @@ class WebSocketTestReceiver:
                             audio_bytes = base64.b64decode(audio_base64)
                             audio_data_buffer.append(audio_bytes)
                             logger.info(f"  Audio size: {len(audio_bytes)} bytes")
+                    
+                    elif command == "voice_end":
+                        # Handle voice end command
+                        event_id = data.get("event_id", "unknown")
+                        logger.info(f"✅ Received VOICE_END command from {client_id}, event_id: {event_id}")
+                        
+                        # Optional: Save accumulated audio when voice ends
+                        if audio_data_buffer:
+                            logger.info(f"Voice session ended, saving {len(audio_data_buffer)} audio chunks")
+                    
+                    elif command == "voice_interrupt":
+                        # Handle voice interrupt command
+                        event_id = data.get("event_id", "unknown")
+                        logger.info(f"🛑 Received VOICE_INTERRUPT command from {client_id}, event_id: {event_id}")
+                        
+                        # Optional: Clear audio buffer on interrupt
+                        if audio_data_buffer:
+                            logger.info(f"Voice interrupted, discarding {len(audio_data_buffer)} audio chunks")
+                            audio_data_buffer.clear()
                         
                     elif "avatar_id" in data and not command:
                         # Legacy format - handle for backward compatibility
@@ -150,11 +182,32 @@ class WebSocketTestReceiver:
     
     async def start_server(self):
         """Start the WebSocket server"""
-        logger.info(f"Starting WebSocket test receiver on ws://localhost:{WEBSOCKET_PORT}")
-        logger.info("Waiting for connections...")
-        logger.info("Expecting messages with commands: 'init' and 'voice'")
+        hostname = get_server_hostname()
         
-        async with websockets.serve(self.handle_client, "localhost", WEBSOCKET_PORT):
+        logger.info("=" * 60)
+        logger.info("WEBSOCKET TEST RECEIVER")
+        logger.info("=" * 60)
+        logger.info(f"Starting WebSocket test receiver on port {WEBSOCKET_PORT}")
+        logger.info(f"Server hostname: {hostname}")
+        logger.info("")
+        logger.info("WebSocket URLs:")
+        logger.info(f"  ws://{hostname}:{WEBSOCKET_PORT}")
+        logger.info(f"  ws://localhost:{WEBSOCKET_PORT}")
+        logger.info("")
+        logger.info("Expecting messages with commands:")
+        logger.info("  - 'init': Session initialization")
+        logger.info("  - 'voice': Audio data chunks") 
+        logger.info("  - 'voice_end': End of voice transmission")
+        logger.info("  - 'voice_interrupt': Voice interruption")
+        logger.info("")
+        logger.info("Audio will be saved to: " + OUTPUT_WAV_FILE)
+        logger.info("Press Ctrl+C to stop")
+        logger.info("=" * 60)
+        
+        # Bind to all interfaces (0.0.0.0) so it can be accessed via any hostname
+        async with websockets.serve(self.handle_client, "0.0.0.0", WEBSOCKET_PORT):
+            logger.info(f"✅ WebSocket server started successfully on 0.0.0.0:{WEBSOCKET_PORT}")
+            logger.info("Waiting for connections...")
             await asyncio.Future()  # Run forever
 
 
@@ -167,4 +220,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("\nServer stopped by user")
+        logger.info("\n🛑 WebSocket server stopped by user")
