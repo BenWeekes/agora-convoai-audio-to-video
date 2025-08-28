@@ -72,7 +72,7 @@ export LD_LIBRARY_PATH="$AGORA_SDK_PATH:$LD_LIBRARY_PATH"
 
 ```bash
 # Navigate to the audio/video publishing example
-cd go-publish-audio-video
+cd go-publish-video
 
 # Clean and build the project
 make clean
@@ -80,25 +80,11 @@ make build
 
 # Run the application (replace with your actual values)
 ./parent -appID "your_agora_app_id" -channelName "your_channel" -enableStringUID=false -userID "your_user_id"
+
+
+This will publish the YUV and PCM in the test_data folder. You can view the same on Agora here with your_agora_app_id and your_channel https://webdemo.agora.io/basicVideoCall/index.html      
 ```
 
-## Configuration
+## Next Steps
 
-Before running the application, make sure to replace the following placeholders with your actual Agora credentials:
-
-- `your_agora_app_id`: Your Agora App ID from the Agora Console
-- `your_channel`: The channel name you want to join
-- `your_user_id`: Your user ID for the session
-
-## Troubleshooting
-
-- Ensure all environment variables are properly set
-- Verify that the Agora SDK path is correct
-- Check that all dependencies are installed
-- Make sure you have the correct permissions for the directories
-
-## Notes
-
-- This setup uses Go 1.21.5 and Agora SDK v4.4.32
-- The `audio_vad.go` file is backed up due to potential compilation issues
-- Environment variables need to be set each time you start a new terminal session
+Modify parent.go to send your own YUV video and PCM audio into Agora. Publish them together in synch and in realtime.   
