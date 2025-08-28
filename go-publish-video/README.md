@@ -2,7 +2,7 @@
 
 This document guides you through setting up and publishing YUV video frames and PCM audio into an Agora channel using the Agora Golang SDK.    
 The steps have been verified on Ubuntu 24.04 but should be compatible with other Debian and Ubuntu versions.    
-parent.go spwans a child process and communicates with it using IPC. This ensure efficent movement of data while keeping each call in its own process for stability and threading optimisation.    
+parent.go launches a child.go in its own process and communicates with it using IPC. This ensure efficent movement of data while keeping each call in its own process for stability and threading optimisation.    
 
 ## Installation Steps
 
