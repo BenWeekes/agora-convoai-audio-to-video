@@ -13,6 +13,7 @@ The integration follows a three-phase workflow:
 ## Architecture Flow
 
 <img src="sequence-diagram.svg" alt="Agora ConvoAI Integration Sequence Diagram" width="100%">
+
 ## Implementation Components
 
 ### 1. Connection Setup API
@@ -23,6 +24,8 @@ The integration follows a three-phase workflow:
 
 ### 3. Go Audio/Video Publishing
 [📁 go-publish-audio-video/](./go-publish-audio-video/)
+
+**Setup Instructions**: See [go-publish-audio-video/README.md](./go-publish-audio-video/README.md) for detailed installation and configuration steps for the Agora Go SDK.
 
 ## Use Cases
 
