@@ -23,7 +23,7 @@ The integration follows a three-phase workflow:
 [📁 websocket-receive-audio/](./websocket-receive-audio/)
 
 ### 3. Go Audio/Video Publishing
-[📁 go-publish-audio-video/](./go-publish-video/)
+[📁 go-publish-video/](./go-publish-video/)
 
 
 ## Use Cases
