@@ -1,4 +1,4 @@
-# Agora ConvoAI Audio-to-Video Integration
+# Agora ConvoAI Voice-to-Video Integration
 
 This repository provides a generic protocol and implementation for external services to receive audio output from Agora's ConvoAI platform, enabling real-time generation and publishing of audio and video content back into Agora channels. This creates interactive experiences such as AI-powered avatars, interactive movies, and other real-time multimedia applications.
 
