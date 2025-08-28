@@ -23,9 +23,8 @@ The integration follows a three-phase workflow:
 [📁 websocket-receive-audio/](./websocket-receive-audio/)
 
 ### 3. Go Audio/Video Publishing
-[📁 go-publish-audio-video/](./go-publish-audio-video/)
+[📁 go-publish-audio-video/](./go-publish-video/)
 
-**Setup Instructions**: See [go-publish-audio-video/README.md](./go-publish-audio-video/README.md) for detailed installation and configuration steps for the Agora Go SDK.
 
 ## Use Cases
 
